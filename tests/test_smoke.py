@@ -13,11 +13,17 @@ client = TestClient(main.app)
 
 
 def test_health_smoke() -> None:
-    response = client.get("/")
+    response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
     assert data["agent"] == "text_summarizer"
+
+
+def test_home_ui_smoke() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers.get("content-type", "")
 
 
 def test_summarize_smoke(monkeypatch) -> None:

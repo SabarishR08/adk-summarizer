@@ -4,9 +4,11 @@ A minimal Google ADK agent deployed behind FastAPI on Cloud Run.
 
 ## What It Does
 
+- Serves a browser UI at `GET /` for interactive summarization
+- Exposes operational health at `GET /health`
 - Accepts text via `POST /summarize`
 - Accepts structured summary requests via `POST /summarize/structured`
-- Uses a Google ADK agent with Gemini (`gemini-2.0-flash` by default)
+- Uses a Google ADK agent with Gemini (`gemini-2.5-flash` by default)
 - Returns a concise summary as JSON
 - Enforces structured summary contract: `title` + `bullets` (3-5 items)
 
@@ -26,11 +28,38 @@ A minimal Google ADK agent deployed behind FastAPI on Cloud Run.
 pip install -r requirements.txt
 ```
 
-3. Set API key:
+3. Configure Vertex auth and env values:
+
+```bash
+# Required once on your machine for Vertex ADC auth
+gcloud auth application-default login
+```
+
+```bash
+# .env (recommended)
+MODEL=gemini-2.5-flash
+GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID
+GOOGLE_CLOUD_LOCATION=us-central1
+GOOGLE_GENAI_USE_VERTEXAI=true
+# Optional aliases accepted by this project:
+PROJECT_ID=YOUR_PROJECT_ID
+LOCATION=us-central1
+```
+
+Or set variables directly in PowerShell:
 
 ```bash
 # PowerShell
-$env:GOOGLE_API_KEY="YOUR_API_KEY"
+$env:MODEL="gemini-2.5-flash"
+$env:GOOGLE_GENAI_USE_VERTEXAI="true"
+```
+
+If your environment is Vertex-backed, also set:
+
+```bash
+# PowerShell
+$env:GOOGLE_CLOUD_PROJECT="YOUR_PROJECT_ID"
+$env:GOOGLE_CLOUD_LOCATION="us-central1"
 ```
 
 4. Start service:
@@ -40,6 +69,18 @@ python main.py
 ```
 
 5. Test:
+
+Open the UI in your browser:
+
+```bash
+http://localhost:8080/
+```
+
+Health endpoint:
+
+```bash
+curl http://localhost:8080/health
+```
 
 ```bash
 curl -X POST http://localhost:8080/summarize \
@@ -53,31 +94,34 @@ curl -X POST http://localhost:8080/summarize/structured \
 
 ## Deploy To Cloud Run
 
-Create a secret once, then deploy using secret injection (recommended):
+Deploy with Vertex model configuration:
 
 ```bash
 gcloud config set project YOUR_PROJECT_ID
 gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
-gcloud secrets create google-api-key --replication-policy=automatic
-echo -n "YOUR_API_KEY" | gcloud secrets versions add google-api-key --data-file=-
 gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/adk-summarizer
 gcloud run deploy adk-summarizer \
   --image gcr.io/YOUR_PROJECT_ID/adk-summarizer \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
-  --set-env-vars GEMINI_MODEL=gemini-2.0-flash \
-  --set-secrets GOOGLE_API_KEY=google-api-key:latest
+  --set-env-vars MODEL=gemini-2.5-flash,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1
 ```
 
-Grant runtime access to the secret for your Cloud Run service account:
+If you receive a model access 404 in your project/region, temporarily fall back to:
+
+```bash
+MODEL=gemini-1.5-flash
+```
+
+Grant runtime access to Vertex AI for your Cloud Run service account:
 
 ```bash
 PROJECT_NUMBER=$(gcloud projects describe YOUR_PROJECT_ID --format='value(projectNumber)')
 SERVICE_ACCOUNT="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-gcloud secrets add-iam-policy-binding google-api-key \
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   --member="serviceAccount:${SERVICE_ACCOUNT}" \
-  --role="roles/secretmanager.secretAccessor"
+  --role="roles/aiplatform.user"
 ```
 
 Get URL:
@@ -85,6 +129,8 @@ Get URL:
 ```bash
 gcloud run services describe adk-summarizer --region us-central1 --format 'value(status.url)'
 ```
+
+After deployment, opening the service URL serves the frontend UI. API endpoints remain available at `/health`, `/summarize`, and `/summarize/structured`.
 
 ## IAM And Security Notes
 
@@ -98,7 +144,7 @@ gcloud run services add-iam-policy-binding adk-summarizer \
   --role=roles/run.invoker
 ```
 
-- This project uses Secret Manager-first deployment for `GOOGLE_API_KEY`.
+- This project uses Vertex IAM-based auth (ADC/service account), not API-key auth.
 
 ## Smoke Tests
 

@@ -1,22 +1,29 @@
 import os
 import json
+from pathlib import Path
 from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.genai.errors import ClientError
 from google.genai.types import Content, Part
 
-from agent import root_agent
+from agent import MODEL_NAME, prepare_text, root_agent
 
 
 APP_NAME = "summarizer"
 DEFAULT_USER_ID = "user1"
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+INDEX_FILE = FRONTEND_DIR / "index.html"
 
 app = FastAPI(title="ADK Text Summarizer", version="1.0.0")
 session_service = InMemorySessionService()
+app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
 
 
 class InputRequest(BaseModel):
@@ -40,15 +47,30 @@ async def run_agent_prompt(prompt: str, user_id: str) -> str:
     new_message = Content(role="user", parts=[Part(text=prompt)])
 
     response_text = ""
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session.id,
-        new_message=new_message,
-    ):
-        if not event.is_final_response() or not event.content:
-            continue
-        if event.content.parts and event.content.parts[0].text:
-            response_text = event.content.parts[0].text
+    try:
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session.id,
+            new_message=new_message,
+        ):
+            if not event.is_final_response() or not event.content:
+                continue
+            if event.content.parts and event.content.parts[0].text:
+                response_text = event.content.parts[0].text
+    except ClientError as exc:
+        model_name = os.getenv("MODEL") or os.getenv("GEMINI_MODEL") or MODEL_NAME
+        project_name = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("PROJECT_ID") or "unset"
+        location_name = os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv("LOCATION") or "unset"
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Model API request failed. "
+                "Check ADC auth and model env vars MODEL/GEMINI_MODEL "
+                f"(current: {model_name}). "
+                f"Project: {project_name}. Location: {location_name}. "
+                f"Upstream error: {exc}"
+            ),
+        ) from exc
 
     if not response_text:
         raise HTTPException(status_code=500, detail="No summary returned by agent")
@@ -86,11 +108,18 @@ def parse_structured_json(text: str) -> StructuredSummaryResponse:
 
 
 @app.get("/")
+def home() -> FileResponse:
+    if not INDEX_FILE.exists():
+        raise HTTPException(status_code=500, detail="Frontend build is missing")
+    return FileResponse(INDEX_FILE)
+
+
+@app.get("/health")
 def health() -> dict:
     return {
         "status": "ok",
         "agent": "text_summarizer",
-        "model": os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        "model": os.getenv("MODEL") or os.getenv("GEMINI_MODEL") or MODEL_NAME,
     }
 
 
@@ -100,7 +129,14 @@ async def summarize(req: InputRequest) -> dict:
         raise HTTPException(status_code=400, detail="input must not be empty")
 
     user_id = req.user_id or DEFAULT_USER_ID
-    summary = await run_agent_prompt(req.input, user_id)
+    cleaned_text = prepare_text(req.input)
+    prompt = (
+        "You are an expert summarizer. "
+        "Summarize the following text into a concise, meaningful summary in 2-3 sentences. "
+        "Return plain text only.\n\n"
+        f"Text:\n{cleaned_text}"
+    )
+    summary = await run_agent_prompt(prompt, user_id)
 
     return {"summary": summary}
 

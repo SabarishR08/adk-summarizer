@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADK Summarizer</title>
+    <link rel="stylesheet" href="/frontend/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <main class="layout">
+      <section class="hero card">
+        <p class="kicker">Track 1 Project</p>
+        <h1>ADK Gemini Summarizer</h1>
+        <p class="subtitle">
+          Production-ready text summarization with FastAPI, ADK, Vertex AI, and Cloud Run.
+        </p>
+        <div class="badges">
+          <span>Gemini 2.5 Flash</span>
+          <span>Vertex IAM</span>
+          <span>Cloud Run</span>
+        </div>
+      </section>
+
+      <section class="panel card">
+        <label for="inputText">Input text</label>
+        <textarea id="inputText" rows="8" placeholder="Paste a paragraph, article section, or report excerpt..."></textarea>
+
+        <div class="controls">
+          <label class="switch">
+            <input id="structuredMode" type="checkbox" />
+            <span>Structured summary</span>
+          </label>
+          <button id="summarizeBtn" type="button">Summarize</button>
+        </div>
+      </section>
+
+      <section class="result card">
+        <div class="result-head">
+          <h2>Result</h2>
+          <span id="statusPill" class="pill idle">Idle</span>
+        </div>
+        <pre id="outputBox" class="output">No output yet.</pre>
+      </section>
+    </main>
+
+    <script src="/frontend/app.js"></script>
+  </body>
+</html>

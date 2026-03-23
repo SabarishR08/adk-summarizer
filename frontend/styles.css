@@ -1,0 +1,207 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --bg: #f7f6f2;
+  --ink: #13110f;
+  --muted: #5f5953;
+  --card: #fffdf8;
+  --line: #e3d9cd;
+  --accent: #cc4e00;
+  --accent-soft: #ffd9c4;
+  --ok: #2a7b34;
+  --warn: #8a5d00;
+  --bad: #a32020;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 15% 10%, #fff8ed 0%, var(--bg) 50%),
+    linear-gradient(120deg, #f5efe7 0%, #f7f6f2 100%);
+  color: var(--ink);
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(to right, rgba(19, 17, 15, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(19, 17, 15, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(circle at center, black 45%, transparent 85%);
+}
+
+.layout {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 8px 24px rgba(39, 30, 20, 0.08);
+}
+
+.hero h1 {
+  margin: 0.2rem 0 0.4rem;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.05;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.badges {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.badges span {
+  font-size: 0.75rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.panel label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.8rem;
+  font-size: 0.98rem;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  resize: vertical;
+  min-height: 170px;
+}
+
+.controls {
+  margin-top: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button {
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.result h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.pill {
+  font-size: 0.73rem;
+  border-radius: 999px;
+  padding: 0.23rem 0.6rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.pill.idle {
+  color: #35302b;
+  background: #f2ece3;
+  border-color: #e3d9cd;
+}
+
+.pill.loading {
+  color: var(--warn);
+  background: #fff3cf;
+  border-color: #f3dd8f;
+}
+
+.pill.success {
+  color: var(--ok);
+  background: #def4df;
+  border-color: #9dd5a2;
+}
+
+.pill.error {
+  color: var(--bad);
+  background: #f9dbdb;
+  border-color: #efaaaa;
+}
+
+.output {
+  white-space: pre-wrap;
+  margin: 0.6rem 0 0;
+  min-height: 100px;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 0.92rem;
+  background: #fff;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  button {
+    width: 100%;
+  }
+}
