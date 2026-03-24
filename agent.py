@@ -11,7 +11,12 @@ if not os.getenv("GOOGLE_CLOUD_PROJECT") and os.getenv("PROJECT_ID"):
     os.environ["GOOGLE_CLOUD_PROJECT"] = os.getenv("PROJECT_ID", "")
 if not os.getenv("GOOGLE_CLOUD_LOCATION") and os.getenv("LOCATION"):
     os.environ["GOOGLE_CLOUD_LOCATION"] = os.getenv("LOCATION", "")
-if not os.getenv("GOOGLE_GENAI_USE_VERTEXAI"):
+vertex_flag = (os.getenv("GOOGLE_GENAI_USE_VERTEXAI") or "").strip().lower()
+if vertex_flag in {"1", "true", "yes", "on"}:
+    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
+elif vertex_flag in {"0", "false", "no", "off"}:
+    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "false"
+else:
     has_vertex_config = os.getenv("GOOGLE_CLOUD_PROJECT") and os.getenv("GOOGLE_CLOUD_LOCATION")
     if has_vertex_config:
         os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"

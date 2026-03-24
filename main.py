@@ -57,6 +57,20 @@ async def run_agent_prompt(prompt: str, user_id: str) -> str:
                 continue
             if event.content.parts and event.content.parts[0].text:
                 response_text = event.content.parts[0].text
+    except ValueError as exc:
+        model_name = os.getenv("MODEL") or os.getenv("GEMINI_MODEL") or MODEL_NAME
+        project_name = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("PROJECT_ID") or "unset"
+        location_name = os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv("LOCATION") or "unset"
+        vertex_flag = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "unset")
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Runtime configuration error while initializing model client. "
+                f"MODEL={model_name}, PROJECT={project_name}, LOCATION={location_name}, "
+                f"GOOGLE_GENAI_USE_VERTEXAI={vertex_flag}. "
+                f"Underlying error: {exc}"
+            ),
+        ) from exc
     except ClientError as exc:
         model_name = os.getenv("MODEL") or os.getenv("GEMINI_MODEL") or MODEL_NAME
         project_name = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("PROJECT_ID") or "unset"

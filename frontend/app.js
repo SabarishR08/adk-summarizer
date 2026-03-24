@@ -36,7 +36,14 @@ async function summarize() {
       body: JSON.stringify({ input: text }),
     });
 
-    const payload = await response.json();
+    const rawBody = await response.text();
+    let payload;
+    try {
+      payload = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      payload = { detail: rawBody || "Request failed" };
+    }
+
     if (!response.ok) {
       throw new Error(payload.detail || "Request failed");
     }
