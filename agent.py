@@ -1,6 +1,7 @@
 import os
 
 from google.adk.agents import Agent
+from google.adk.tools import FunctionTool
 from dotenv import load_dotenv
 
 
@@ -27,6 +28,18 @@ def prepare_text(text: str) -> str:
     return " ".join(text.split())
 
 
+def analyze_text(text: str) -> dict:
+    """Return basic text stats for summarization planning."""
+    cleaned = prepare_text(text)
+    words = [token for token in cleaned.split(" ") if token]
+    sentence_count = sum(cleaned.count(mark) for mark in [".", "!", "?"])
+    return {
+        "cleaned_text": cleaned,
+        "word_count": len(words),
+        "sentence_count": sentence_count,
+    }
+
+
 def resolve_model_name() -> str:
     """Resolve model from env with backward-compatible key support."""
     return (
@@ -37,6 +50,7 @@ def resolve_model_name() -> str:
 
 
 MODEL_NAME = resolve_model_name()
+analyze_text_tool = FunctionTool(func=analyze_text)
 
 root_agent = Agent(
     name="text_summarizer",
@@ -44,7 +58,9 @@ root_agent = Agent(
     description="Summarizes user-provided text.",
     instruction=(
         "You are an expert summarization assistant. "
+        "Always call the analyze_text tool once on the user's text before writing the final response. "
         "Return only a concise 2-3 sentence summary in plain text. "
         "Preserve factual meaning, remove repetition, and avoid adding new claims."
     ),
+    tools=[analyze_text_tool],
 )

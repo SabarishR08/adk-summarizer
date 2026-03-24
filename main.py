@@ -46,7 +46,7 @@ async def run_agent_prompt(prompt: str, user_id: str) -> str:
     session = await session_service.create_session(app_name=APP_NAME, user_id=user_id)
     new_message = Content(role="user", parts=[Part(text=prompt)])
 
-    response_text = ""
+    text_fragments: list[str] = []
     try:
         async for event in runner.run_async(
             user_id=user_id,
@@ -55,8 +55,11 @@ async def run_agent_prompt(prompt: str, user_id: str) -> str:
         ):
             if not event.is_final_response() or not event.content:
                 continue
-            if event.content.parts and event.content.parts[0].text:
-                response_text = event.content.parts[0].text
+            if not event.content.parts:
+                continue
+            for part in event.content.parts:
+                if part.text:
+                    text_fragments.append(part.text)
     except ValueError as exc:
         model_name = os.getenv("MODEL") or os.getenv("GEMINI_MODEL") or MODEL_NAME
         project_name = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("PROJECT_ID") or "unset"
@@ -85,6 +88,8 @@ async def run_agent_prompt(prompt: str, user_id: str) -> str:
                 f"Upstream error: {exc}"
             ),
         ) from exc
+
+    response_text = "\n".join(fragment.strip() for fragment in text_fragments if fragment.strip()).strip()
 
     if not response_text:
         raise HTTPException(status_code=500, detail="No summary returned by agent")
